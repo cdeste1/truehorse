@@ -1400,8 +1400,8 @@
   // Replace these with your actual Supabase credentials
   // Found at: https://supabase.com/dashboard → your project → Settings → API
   // ─────────────────────────────────────────────
-  const SUPABASE_URL = 'https://juoxafcylvynbodadavj.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_DIxq2KfHv-VH38YorqyC8g_N07xdFmh';
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
   /*
   ─────────────────────────────────────────────
@@ -1504,8 +1504,10 @@
     if (step === 1) {
       ['first_name', 'last_name', 'email', 'state', 'age_range', 'has_trainer'].forEach(name => {
         const input = document.querySelector(`[name="${name}"]`);
-        const error = input.parentElement.querySelector('.field-error');
-        if (!input.value.trim() || (name === 'email' && !input.value.includes('@'))) {
+        const error = input.closest('.field-group').querySelector('.field-error');
+        const isEmpty = !input.value.trim();
+        const isInvalidEmail = name === 'email' && input.value && !input.value.includes('@');
+        if (isEmpty || isInvalidEmail) {
           input.classList.add('error');
           if (error) error.classList.add('visible');
           valid = false;
