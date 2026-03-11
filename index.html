@@ -1,0 +1,1659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrueHorse — Find Your True Match</title>
+<meta name="description" content="TrueHorse matches riders to horses based on compatibility — not just listings. Find the horse that truly fits you.">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --forest: #1C2B1C;
+    --forest-mid: #2A3F2A;
+    --sage: #7A9E7A;
+    --sage-light: #A8C5A8;
+    --cream: #F8F4ED;
+    --warm-white: #FDFAF6;
+    --gold: #C4973A;
+    --gold-light: #E8C97A;
+    --muted: #8A9E8A;
+    --text-dark: #1C2B1C;
+    --text-mid: #4A5E4A;
+    --border: #D4E0D4;
+    --error: #C0392B;
+    --success: #2E7D32;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--cream);
+    color: var(--text-dark);
+    font-family: 'Jost', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+  }
+
+  /* ─── NAVIGATION ─── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(248, 244, 237, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(212, 224, 212, 0.5);
+    transition: padding 0.3s ease;
+  }
+
+  .nav-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--forest);
+    letter-spacing: 1px;
+    text-decoration: none;
+  }
+
+  .nav-logo span {
+    color: var(--gold);
+  }
+
+  .nav-cta {
+    background: var(--forest);
+    color: var(--cream);
+    padding: 10px 24px;
+    border-radius: 2px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+
+  .nav-cta:hover { background: var(--forest-mid); }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    background: var(--forest);
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 70% 50%, rgba(124, 158, 124, 0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 20% 80%, rgba(196, 151, 58, 0.08) 0%, transparent 50%);
+  }
+
+  /* Subtle grid texture */
+  .hero-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 120px 40px 80px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+
+  .hero-left {}
+
+  .hero-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    width: 30px;
+    height: 1px;
+    background: var(--gold);
+  }
+
+  .hero-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(3rem, 5vw, 4.5rem);
+    font-weight: 300;
+    line-height: 1.1;
+    color: var(--cream);
+    margin-bottom: 24px;
+    letter-spacing: -1px;
+  }
+
+  .hero-title em {
+    font-style: italic;
+    color: var(--gold-light);
+  }
+
+  .hero-subtitle {
+    font-size: 1rem;
+    line-height: 1.8;
+    color: var(--sage-light);
+    margin-bottom: 40px;
+    max-width: 440px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    background: var(--gold);
+    color: var(--forest);
+    padding: 16px 36px;
+    border-radius: 2px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+  }
+
+  .btn-primary:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--cream);
+    padding: 16px 36px;
+    border-radius: 2px;
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+  }
+
+  .btn-ghost:hover {
+    border-color: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.05);
+  }
+
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .hero-stat-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: background 0.2s ease;
+  }
+
+  .hero-stat-card:hover {
+    background: rgba(255,255,255,0.07);
+  }
+
+  .stat-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+
+  .stat-text strong {
+    display: block;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--cream);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-text span {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ─── HOW IT WORKS ─── */
+  .how {
+    background: var(--warm-white);
+    padding: 100px 40px;
+  }
+
+  .how-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 24px;
+    height: 1px;
+    background: var(--gold);
+  }
+
+  .section-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    font-weight: 300;
+    line-height: 1.2;
+    color: var(--forest);
+    margin-bottom: 60px;
+    max-width: 500px;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+    position: relative;
+  }
+
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: calc(16.66% + 20px);
+    right: calc(16.66% + 20px);
+    height: 1px;
+    background: var(--border);
+  }
+
+  .step {
+    position: relative;
+  }
+
+  .step-number {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--forest);
+    color: var(--cream);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .step h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--forest);
+    margin-bottom: 10px;
+  }
+
+  .step p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: var(--text-mid);
+  }
+
+  /* ─── FORM SECTION ─── */
+  .form-section {
+    background: var(--cream);
+    padding: 100px 40px;
+  }
+
+  .form-inner {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  .form-header {
+    margin-bottom: 50px;
+  }
+
+  /* Multi-step progress */
+  .progress-bar {
+    display: flex;
+    gap: 0;
+    margin-bottom: 50px;
+    border-radius: 2px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .progress-step {
+    flex: 1;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--warm-white);
+    border-right: 1px solid var(--border);
+    transition: all 0.3s ease;
+    cursor: default;
+  }
+
+  .progress-step:last-child { border-right: none; }
+
+  .progress-step.active {
+    background: var(--forest);
+    color: var(--cream);
+  }
+
+  .progress-step.done {
+    background: var(--sage);
+    color: var(--cream);
+  }
+
+  /* Form steps */
+  .form-step { display: none; }
+  .form-step.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 400;
+    color: var(--forest);
+    margin-bottom: 6px;
+  }
+
+  .step-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-mid);
+    margin-bottom: 36px;
+    line-height: 1.6;
+  }
+
+  /* Form fields */
+  .field-group {
+    margin-bottom: 24px;
+  }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-mid);
+    margin-bottom: 8px;
+  }
+
+  label .req {
+    color: var(--gold);
+    margin-left: 3px;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="number"],
+  input[type="tel"],
+  select,
+  textarea {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: var(--text-dark);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    appearance: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--sage);
+    box-shadow: 0 0 0 3px rgba(122, 158, 122, 0.12);
+  }
+
+  input.error, select.error, textarea.error {
+    border-color: var(--error);
+  }
+
+  .field-error {
+    font-size: 0.75rem;
+    color: var(--error);
+    margin-top: 5px;
+    display: none;
+  }
+
+  .field-error.visible { display: block; }
+
+  textarea { resize: vertical; min-height: 100px; }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234A5E4A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+    cursor: pointer;
+  }
+
+  /* Radio/checkbox groups */
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+  }
+
+  .options-grid.two-col {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .option-card {
+    position: relative;
+  }
+
+  .option-card input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .option-card label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--warm-white);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--text-dark);
+    transition: all 0.15s ease;
+    margin: 0;
+  }
+
+  .option-card label::before {
+    content: '';
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+  }
+
+  .option-card input:checked + label {
+    background: var(--forest);
+    border-color: var(--forest);
+    color: var(--cream);
+  }
+
+  .option-card input:checked + label::before {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  /* Checkbox variant */
+  .option-card.checkbox label::before {
+    border-radius: 2px;
+  }
+
+  /* Range slider */
+  .range-container {
+    padding: 10px 0;
+  }
+
+  .range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .range-value {
+    text-align: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--forest);
+    margin-bottom: 8px;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    cursor: pointer;
+    accent-color: var(--forest);
+  }
+
+  /* Navigation buttons */
+  .form-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 40px;
+    padding-top: 30px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-back {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-mid);
+    padding: 14px 28px;
+    border-radius: 2px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-back:hover {
+    border-color: var(--text-mid);
+    color: var(--text-dark);
+  }
+
+  .btn-next {
+    background: var(--forest);
+    border: none;
+    color: var(--cream);
+    padding: 14px 36px;
+    border-radius: 2px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-next:hover {
+    background: var(--forest-mid);
+    transform: translateY(-1px);
+  }
+
+  .btn-next:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-submit {
+    background: var(--gold);
+    border: none;
+    color: var(--forest);
+    padding: 16px 40px;
+    border-radius: 2px;
+    font-family: 'Jost', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-submit:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* Success state */
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+    animation: fadeIn 0.5s ease;
+  }
+
+  .success-screen.visible { display: block; }
+
+  .success-icon {
+    font-size: 3rem;
+    margin-bottom: 20px;
+  }
+
+  .success-screen h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.2rem;
+    font-weight: 400;
+    color: var(--forest);
+    margin-bottom: 12px;
+  }
+
+  .success-screen p {
+    font-size: 1rem;
+    color: var(--text-mid);
+    line-height: 1.7;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+
+  /* Helper text */
+  .field-hint {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 30px 0;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--forest);
+    color: var(--sage-light);
+    padding: 50px 40px;
+    text-align: center;
+  }
+
+  .footer-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--cream);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .footer-logo span { color: var(--gold); }
+
+  footer p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  /* ─── SETUP BANNER ─── */
+  .setup-banner {
+    background: #FFF3CD;
+    border: 1px solid #FFD700;
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-bottom: 30px;
+    font-size: 0.85rem;
+    color: #856404;
+    line-height: 1.6;
+  }
+
+  .setup-banner strong { color: #533F03; }
+  .setup-banner code {
+    background: rgba(0,0,0,0.08);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    .hero-content { grid-template-columns: 1fr; gap: 40px; padding: 100px 20px 60px; }
+    .hero-right { display: none; }
+    .how, .form-section { padding: 70px 20px; }
+    .steps { grid-template-columns: 1fr; }
+    .steps::before { display: none; }
+    .field-row { grid-template-columns: 1fr; }
+    .options-grid.two-col { grid-template-columns: 1fr; }
+    .form-nav { flex-direction: column-reverse; gap: 12px; }
+    .btn-back, .btn-next, .btn-submit { width: 100%; text-align: center; }
+    .progress-step { font-size: 0.55rem; padding: 10px 4px; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .loading { animation: pulse 1.5s ease infinite; }
+</style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <a href="#" class="nav-logo">True<span>Horse</span></a>
+  <a href="#find-your-match" class="nav-cta">Find Your Match</a>
+</nav>
+
+<!-- ─── HERO ─── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-left">
+      <div class="hero-eyebrow">Connecticut · Hunter/Jumper · Dressage</div>
+      <h1 class="hero-title">
+        Find Your<br>
+        <em>True</em> Horse
+      </h1>
+      <p class="hero-subtitle">
+        Most riders search for horses based on breed, price, and photos. TrueHorse flips the model — we start with <em>you</em>, and match you to horses that genuinely fit your experience, goals, and riding style.
+      </p>
+      <div class="hero-actions">
+        <a href="#find-your-match" class="btn-primary">Start My Profile</a>
+        <a href="#how-it-works" class="btn-ghost">How It Works</a>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-stat-card">
+        <div class="stat-icon">🐴</div>
+        <div class="stat-text">
+          <strong>500+</strong>
+          <span>Horses currently listed in New England</span>
+        </div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-text">
+          <strong>H/J & Dressage</strong>
+          <span>Focused on the disciplines that demand true fit</span>
+        </div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-text">
+          <strong>Compatibility First</strong>
+          <span>Matched on experience, goals & riding style — not just price</span>
+        </div>
+      </div>
+      <div class="hero-stat-card">
+        <div class="stat-icon">✓</div>
+        <div class="stat-text">
+          <strong>Trainer Verified</strong>
+          <span>Listings reviewed by certified equestrian professionals</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── HOW IT WORKS ─── -->
+<section class="how" id="how-it-works">
+  <div class="how-inner">
+    <div class="section-label">The Process</div>
+    <h2 class="section-title">A smarter way to find your horse</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-number">1</div>
+        <h3>Build Your Profile</h3>
+        <p>Tell us about your riding history, experience level, goals, and what you're looking for. It takes about 5 minutes and covers what really matters.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <h3>Get Matched</h3>
+        <p>Our matching algorithm compares your profile against listed horses — surfacing horses that fit you, not just horses that are available.</p>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <h3>Meet Your Match</h3>
+        <p>Review your top matches, connect with sellers, and try before you buy. Your trainer can review matches too — we're built for the way horse buying actually works.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── RIDER FORM ─── -->
+<section class="form-section" id="find-your-match">
+  <div class="form-inner">
+    <div class="form-header">
+      <div class="section-label">Rider Profile</div>
+      <h2 class="section-title">Tell us about yourself</h2>
+    </div>
+
+    <!-- Supabase setup notice — remove once configured -->
+    <div class="setup-banner" id="setupBanner">
+      <strong>⚙️ Developer Setup Required:</strong> Replace <code>YOUR_SUPABASE_URL</code> and <code>YOUR_SUPABASE_ANON_KEY</code> at the bottom of this file with your Supabase project credentials. Create a table called <code>rider_profiles</code> using the schema in the comments. <a href="https://supabase.com/dashboard" target="_blank" style="color:#533F03">Open Supabase Dashboard →</a>
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress-step active" data-step="1">Basics</div>
+      <div class="progress-step" data-step="2">Experience</div>
+      <div class="progress-step" data-step="3">Goals</div>
+      <div class="progress-step" data-step="4">The Details</div>
+      <div class="progress-step" data-step="5">Honest Qs</div>
+    </div>
+
+    <form id="riderForm" novalidate>
+
+      <!-- ─── STEP 1: BASICS ─── -->
+      <div class="form-step active" id="step-1">
+        <h3 class="step-title">About You</h3>
+        <p class="step-subtitle">Let's start with the basics. This helps us personalize your matches.</p>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>First Name <span class="req">*</span></label>
+            <input type="text" name="first_name" placeholder="Jane" required>
+            <div class="field-error">Please enter your first name</div>
+          </div>
+          <div class="field-group">
+            <label>Last Name <span class="req">*</span></label>
+            <input type="text" name="last_name" placeholder="Smith" required>
+            <div class="field-error">Please enter your last name</div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" name="email" placeholder="jane@example.com" required>
+          <div class="field-error">Please enter a valid email address</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Phone (optional)</label>
+            <input type="tel" name="phone" placeholder="(203) 555-0100">
+          </div>
+          <div class="field-group">
+            <label>Your State <span class="req">*</span></label>
+            <select name="state" required>
+              <option value="">Select state...</option>
+              <option value="CT" selected>Connecticut</option>
+              <option value="MA">Massachusetts</option>
+              <option value="NY">New York</option>
+              <option value="NJ">New Jersey</option>
+              <option value="PA">Pennsylvania</option>
+              <option value="VT">Vermont</option>
+              <option value="NH">New Hampshire</option>
+              <option value="RI">Rhode Island</option>
+              <option value="ME">Maine</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="field-error">Please select your state</div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Your Age Range <span class="req">*</span></label>
+            <select name="age_range" required>
+              <option value="">Select...</option>
+              <option>Under 18</option>
+              <option>18–25</option>
+              <option>26–35</option>
+              <option>36–45</option>
+              <option>46–55</option>
+              <option>56+</option>
+            </select>
+            <div class="field-error">Please select your age range</div>
+          </div>
+          <div class="field-group">
+            <label>Do you have a trainer? <span class="req">*</span></label>
+            <select name="has_trainer" required>
+              <option value="">Select...</option>
+              <option>Yes — actively working with one</option>
+              <option>Yes — occasionally</option>
+              <option>No, but looking for one</option>
+              <option>No, I ride independently</option>
+            </select>
+            <div class="field-error">Please select an option</div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Trainer's Name (if applicable)</label>
+          <input type="text" name="trainer_name" placeholder="Their name helps us verify matches">
+          <p class="field-hint">Your trainer can review your matches — we recommend involving them in the process.</p>
+        </div>
+
+        <div class="form-nav">
+          <div></div>
+          <button type="button" class="btn-next" onclick="nextStep(1)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- ─── STEP 2: EXPERIENCE ─── -->
+      <div class="form-step" id="step-2">
+        <h3 class="step-title">Your Riding Experience</h3>
+        <p class="step-subtitle">Be honest here — this is the most important part of your match. There's no wrong answer.</p>
+
+        <div class="field-group">
+          <label>How long have you been riding? <span class="req">*</span></label>
+          <select name="years_riding" required>
+            <option value="">Select...</option>
+            <option>Less than 1 year</option>
+            <option>1–3 years</option>
+            <option>3–5 years</option>
+            <option>5–10 years</option>
+            <option>10–20 years</option>
+            <option>20+ years</option>
+          </select>
+          <div class="field-error">Please select how long you've been riding</div>
+        </div>
+
+        <div class="field-group">
+          <label>How often do you ride? <span class="req">*</span></label>
+          <div class="options-grid two-col">
+            <div class="option-card">
+              <input type="radio" name="ride_frequency" id="freq1" value="1–2 days/week" required>
+              <label for="freq1">1–2 days per week</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="ride_frequency" id="freq2" value="3–4 days/week">
+              <label for="freq2">3–4 days per week</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="ride_frequency" id="freq3" value="5–6 days/week">
+              <label for="freq3">5–6 days per week</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="ride_frequency" id="freq4" value="Daily">
+              <label for="freq4">Daily</label>
+            </div>
+          </div>
+          <div class="field-error" id="freqError">Please select how often you ride</div>
+        </div>
+
+        <div class="field-group">
+          <label>Primary discipline <span class="req">*</span></label>
+          <div class="options-grid two-col">
+            <div class="option-card">
+              <input type="radio" name="discipline" id="disc1" value="Hunter" required>
+              <label for="disc1">🏇 Hunter</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="discipline" id="disc2" value="Jumper">
+              <label for="disc2">⬆️ Jumper</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="discipline" id="disc3" value="Equitation">
+              <label for="disc3">🎖️ Equitation</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="discipline" id="disc4" value="Dressage">
+              <label for="disc4">🎩 Dressage</label>
+            </div>
+          </div>
+          <div class="field-error" id="discError">Please select your primary discipline</div>
+        </div>
+
+        <!-- H/J specific -->
+        <div class="field-group" id="hjFields">
+          <label>Current jump height (comfortable & competitive)</label>
+          <select name="jump_height">
+            <option value="">Select...</option>
+            <option>Cross rails / 2'</option>
+            <option>2'3" – 2'6"</option>
+            <option>2'9" – 3'</option>
+            <option>3'3" – 3'6"</option>
+            <option>3'9" – 4'</option>
+            <option>4'3" and above</option>
+            <option>N/A — Dressage only</option>
+          </select>
+        </div>
+
+        <!-- Dressage specific -->
+        <div class="field-group">
+          <label>Dressage training level (if applicable)</label>
+          <select name="dressage_level">
+            <option value="">Select or N/A...</option>
+            <option>N/A</option>
+            <option>Introductory</option>
+            <option>Training Level</option>
+            <option>First Level</option>
+            <option>Second Level</option>
+            <option>Third Level</option>
+            <option>Fourth Level</option>
+            <option>Prix St. Georges +</option>
+          </select>
+        </div>
+
+        <div class="field-group">
+          <label>Rider confidence — how do you feel in the saddle? <span class="req">*</span></label>
+          <div class="range-container">
+            <div class="range-value" id="confidenceVal">5</div>
+            <div class="range-labels"><span>1 — Very nervous</span><span>10 — Completely confident</span></div>
+            <input type="range" name="confidence_level" id="confidenceRange" min="1" max="10" value="5"
+              oninput="document.getElementById('confidenceVal').textContent = this.value">
+          </div>
+          <p class="field-hint">Be honest — a 6 matched to the right horse beats a nervous 8 on the wrong one.</p>
+        </div>
+
+        <div class="form-nav">
+          <button type="button" class="btn-back" onclick="prevStep(2)">← Back</button>
+          <button type="button" class="btn-next" onclick="nextStep(2)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- ─── STEP 3: GOALS ─── -->
+      <div class="form-step" id="step-3">
+        <h3 class="step-title">Your Goals</h3>
+        <p class="step-subtitle">What are you looking to do with this horse? This shapes everything about what will fit.</p>
+
+        <div class="field-group">
+          <label>What are you looking to do with this horse? <span class="req">*</span> <small style="text-transform:none;letter-spacing:0;font-weight:300">(select all that apply)</small></label>
+          <div class="options-grid">
+            <div class="option-card checkbox">
+              <input type="checkbox" name="goals" id="goal1" value="Compete locally (schooling shows)">
+              <label for="goal1">Compete locally</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="goals" id="goal2" value="Compete rated/recognized">
+              <label for="goal2">Compete rated/recognized</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="goals" id="goal3" value="Move up levels">
+              <label for="goal3">Move up levels</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="goals" id="goal4" value="Stay competitive at current level">
+              <label for="goal4">Stay at current level</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="goals" id="goal5" value="Pleasure/trail riding">
+              <label for="goal5">Pleasure / trail riding</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="goals" id="goal6" value="Rebuild confidence">
+              <label for="goal6">Rebuild confidence</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Timeline — when are you looking to buy? <span class="req">*</span></label>
+          <div class="options-grid">
+            <div class="option-card">
+              <input type="radio" name="timeline" id="time1" value="Immediately (0–30 days)" required>
+              <label for="time1">Immediately</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="timeline" id="time2" value="1–3 months">
+              <label for="time2">1–3 months</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="timeline" id="time3" value="3–6 months">
+              <label for="time3">3–6 months</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="timeline" id="time4" value="Just exploring">
+              <label for="time4">Just exploring</label>
+            </div>
+          </div>
+          <div class="field-error" id="timelineError">Please select a timeline</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Budget — purchase price <span class="req">*</span></label>
+            <select name="budget_purchase" required>
+              <option value="">Select range...</option>
+              <option>Under $10,000</option>
+              <option>$10,000 – $25,000</option>
+              <option>$25,000 – $50,000</option>
+              <option>$50,000 – $100,000</option>
+              <option>$100,000 – $200,000</option>
+              <option>$200,000+</option>
+              <option>Open / flexible</option>
+            </select>
+            <div class="field-error">Please select a budget range</div>
+          </div>
+          <div class="field-group">
+            <label>Monthly board + training budget</label>
+            <select name="budget_monthly">
+              <option value="">Select range...</option>
+              <option>Under $1,500/mo</option>
+              <option>$1,500 – $2,500/mo</option>
+              <option>$2,500 – $4,000/mo</option>
+              <option>$4,000 – $6,000/mo</option>
+              <option>$6,000+/mo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Are you open to a lease before buying?</label>
+          <div class="options-grid">
+            <div class="option-card">
+              <input type="radio" name="open_to_lease" id="lease1" value="Yes, open to full or partial lease">
+              <label for="lease1">Yes, open to it</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="open_to_lease" id="lease2" value="Lease to own preferred">
+              <label for="lease2">Lease to own preferred</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="open_to_lease" id="lease3" value="Purchase only">
+              <label for="lease3">Purchase only</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-nav">
+          <button type="button" class="btn-back" onclick="prevStep(3)">← Back</button>
+          <button type="button" class="btn-next" onclick="nextStep(3)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- ─── STEP 4: DETAILS ─── -->
+      <div class="form-step" id="step-4">
+        <h3 class="step-title">Horse Preferences</h3>
+        <p class="step-subtitle">Tell us what you're looking for — and what you want to avoid.</p>
+
+        <div class="field-group">
+          <label>Energy level preference <span class="req">*</span></label>
+          <div class="options-grid">
+            <div class="option-card">
+              <input type="radio" name="energy_preference" id="energy1" value="Quiet — needs lots of leg" required>
+              <label for="energy1">Quiet — needs leg</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="energy_preference" id="energy2" value="Moderate — balanced">
+              <label for="energy2">Moderate</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="energy_preference" id="energy3" value="Forward — sensitive">
+              <label for="energy3">Forward — sensitive</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="energy_preference" id="energy4" value="No preference">
+              <label for="energy4">No preference</label>
+            </div>
+          </div>
+          <div class="field-error" id="energyError">Please select an energy preference</div>
+        </div>
+
+        <div class="field-group">
+          <label>Spook tolerance — how do you handle a spooky horse?</label>
+          <div class="options-grid">
+            <div class="option-card">
+              <input type="radio" name="spook_tolerance" id="spook1" value="Prefer bombproof">
+              <label for="spook1">Prefer bombproof</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="spook_tolerance" id="spook2" value="Okay with average spookiness">
+              <label for="spook2">Average is fine</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="spook_tolerance" id="spook3" value="I enjoy the challenge">
+              <label for="spook3">Enjoy the challenge</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Are you open to a green horse (younger, less experience)?</label>
+          <div class="options-grid">
+            <div class="option-card">
+              <input type="radio" name="green_horse" id="green1" value="No — need proven and reliable">
+              <label for="green1">No — need proven</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="green_horse" id="green2" value="Maybe — with trainer support">
+              <label for="green2">Maybe — with trainer</label>
+            </div>
+            <div class="option-card">
+              <input type="radio" name="green_horse" id="green3" value="Yes — open to a project">
+              <label for="green3">Yes — open to a project</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Preferred height range</label>
+            <select name="horse_height">
+              <option value="">Any height</option>
+              <option>Under 15hh (small/pony)</option>
+              <option>15hh – 15.3hh</option>
+              <option>16hh – 16.3hh</option>
+              <option>17hh – 17.2hh</option>
+              <option>17.3hh+</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Preferred gender</label>
+            <select name="horse_gender">
+              <option value="">No preference</option>
+              <option>Gelding preferred</option>
+              <option>Mare preferred</option>
+              <option>Mare or Gelding only</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Preferred breeds <small style="text-transform:none;letter-spacing:0;font-weight:300">(check all that apply)</small></label>
+          <div class="options-grid">
+            <div class="option-card checkbox">
+              <input type="checkbox" name="breeds" id="breed1" value="Warmblood">
+              <label for="breed1">Warmblood</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="breeds" id="breed2" value="Thoroughbred">
+              <label for="breed2">Thoroughbred</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="breeds" id="breed3" value="Dutch/KWPN">
+              <label for="breed3">Dutch / KWPN</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="breeds" id="breed4" value="Hanoverian">
+              <label for="breed4">Hanoverian</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="breeds" id="breed5" value="Irish Sport Horse">
+              <label for="breed5">Irish Sport Horse</label>
+            </div>
+            <div class="option-card checkbox">
+              <input type="checkbox" name="breeds" id="breed6" value="No preference">
+              <label for="breed6">No preference</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-nav">
+          <button type="button" class="btn-back" onclick="prevStep(4)">← Back</button>
+          <button type="button" class="btn-next" onclick="nextStep(4)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- ─── STEP 5: THE HONEST QUESTIONS ─── -->
+      <div class="form-step" id="step-5">
+        <h3 class="step-title">The Honest Questions</h3>
+        <p class="step-subtitle">These open-ended questions are the secret sauce. Your answers help us make matches no algorithm alone would find.</p>
+
+        <div class="field-group">
+          <label>Describe the best horse you've ever ridden. What made it work?</label>
+          <textarea name="best_horse" placeholder="What was it about that horse that clicked for you?"></textarea>
+        </div>
+
+        <div class="field-group">
+          <label>Have you had any difficult experiences on a horse that affect your confidence?</label>
+          <textarea name="difficult_experience" placeholder="Falls, scary situations, a horse that wasn't right for you... this helps us find something safer."></textarea>
+          <p class="field-hint">This is confidential and only used to improve your match quality.</p>
+        </div>
+
+        <div class="field-group">
+          <label>What is an absolute dealbreaker for you in a horse?</label>
+          <textarea name="dealbreakers" placeholder="Rearing, bolting, a specific vice, too much maintenance..."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label>Is there anything your trainer has flagged about your riding that you're actively working on?</label>
+          <textarea name="riding_notes" placeholder="Position, timing, confidence, a specific habit... knowing this helps us match you to a forgiving or appropriate horse."></textarea>
+        </div>
+
+        <div class="field-group">
+          <label>Anything else you want us to know?</label>
+          <textarea name="additional_notes" placeholder="Family situation, physical considerations, barn preference, anything at all..."></textarea>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field-group">
+          <div class="option-card checkbox">
+            <input type="checkbox" name="consent" id="consent" required>
+            <label for="consent" style="text-transform:none;letter-spacing:0;font-weight:300;font-size:0.85rem">I agree to TrueHorse's terms of service and consent to being contacted about horse matches. My information will not be shared with third parties without my permission.</label>
+          </div>
+          <div class="field-error" id="consentError">Please agree to the terms to continue</div>
+        </div>
+
+        <div class="form-nav">
+          <button type="button" class="btn-back" onclick="prevStep(5)">← Back</button>
+          <button type="submit" class="btn-submit" id="submitBtn">Find My Matches →</button>
+        </div>
+      </div>
+
+    </form>
+
+    <!-- Success screen -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">🐴</div>
+      <h2>You're in the stable.</h2>
+      <p>Your rider profile has been received. We'll review your details and send your top matches within <strong>48 hours</strong>. Keep an eye on your inbox — and feel free to share TrueHorse with your trainer.</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="footer-logo">True<span>Horse</span></div>
+  <p>Connecticut · Hunter/Jumper · Dressage · © 2025 TrueHorse</p>
+</footer>
+
+<script>
+  // ─────────────────────────────────────────────
+  // SUPABASE CONFIGURATION
+  // Replace these with your actual Supabase credentials
+  // Found at: https://supabase.com/dashboard → your project → Settings → API
+  // ─────────────────────────────────────────────
+  const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+  const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+
+  /*
+  ─────────────────────────────────────────────
+  SUPABASE TABLE SCHEMA
+  Run this SQL in your Supabase SQL editor:
+
+  create table rider_profiles (
+    id uuid default gen_random_uuid() primary key,
+    created_at timestamp with time zone default now(),
+    first_name text,
+    last_name text,
+    email text,
+    phone text,
+    state text,
+    age_range text,
+    has_trainer text,
+    trainer_name text,
+    years_riding text,
+    ride_frequency text,
+    discipline text,
+    jump_height text,
+    dressage_level text,
+    confidence_level integer,
+    goals text[],
+    timeline text,
+    budget_purchase text,
+    budget_monthly text,
+    open_to_lease text,
+    energy_preference text,
+    spook_tolerance text,
+    green_horse text,
+    horse_height text,
+    horse_gender text,
+    breeds text[],
+    best_horse text,
+    difficult_experience text,
+    dealbreakers text,
+    riding_notes text,
+    additional_notes text,
+    status text default 'new'
+  );
+
+  -- Enable Row Level Security
+  alter table rider_profiles enable row level security;
+
+  -- Allow inserts from anonymous users (for form submissions)
+  create policy "Allow public inserts" on rider_profiles
+    for insert with check (true);
+  ─────────────────────────────────────────────
+  */
+
+  // Hide setup banner if credentials are configured
+  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+    document.getElementById('setupBanner').style.display = 'none';
+  }
+
+  // Initialize Supabase
+  let supabase = null;
+  try {
+    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+  } catch(e) {
+    console.warn('Supabase not configured yet');
+  }
+
+  // ─── MULTI-STEP NAVIGATION ───
+  let currentStep = 1;
+  const totalSteps = 5;
+
+  function updateProgress(step) {
+    document.querySelectorAll('.progress-step').forEach((el, i) => {
+      el.classList.remove('active', 'done');
+      if (i + 1 === step) el.classList.add('active');
+      if (i + 1 < step) el.classList.add('done');
+    });
+  }
+
+  function showStep(step) {
+    document.querySelectorAll('.form-step').forEach(el => el.classList.remove('active'));
+    document.getElementById(`step-${step}`).classList.add('active');
+    updateProgress(step);
+    currentStep = step;
+    window.scrollTo({ top: document.getElementById('find-your-match').offsetTop - 80, behavior: 'smooth' });
+  }
+
+  function nextStep(from) {
+    if (!validateStep(from)) return;
+    showStep(from + 1);
+  }
+
+  function prevStep(from) {
+    showStep(from - 1);
+  }
+
+  // ─── VALIDATION ───
+  function validateStep(step) {
+    let valid = true;
+
+    if (step === 1) {
+      ['first_name', 'last_name', 'email', 'state', 'age_range', 'has_trainer'].forEach(name => {
+        const input = document.querySelector(`[name="${name}"]`);
+        const error = input.parentElement.querySelector('.field-error');
+        if (!input.value.trim() || (name === 'email' && !input.value.includes('@'))) {
+          input.classList.add('error');
+          if (error) error.classList.add('visible');
+          valid = false;
+        } else {
+          input.classList.remove('error');
+          if (error) error.classList.remove('visible');
+        }
+      });
+    }
+
+    if (step === 2) {
+      // Check years riding
+      const yearsRiding = document.querySelector('[name="years_riding"]');
+      if (!yearsRiding.value) {
+        yearsRiding.classList.add('error');
+        valid = false;
+      } else {
+        yearsRiding.classList.remove('error');
+      }
+
+      // Check ride frequency
+      const freq = document.querySelector('[name="ride_frequency"]:checked');
+      if (!freq) {
+        document.getElementById('freqError').classList.add('visible');
+        valid = false;
+      } else {
+        document.getElementById('freqError').classList.remove('visible');
+      }
+
+      // Check discipline
+      const disc = document.querySelector('[name="discipline"]:checked');
+      if (!disc) {
+        document.getElementById('discError').classList.add('visible');
+        valid = false;
+      } else {
+        document.getElementById('discError').classList.remove('visible');
+      }
+    }
+
+    if (step === 3) {
+      const budgetPurchase = document.querySelector('[name="budget_purchase"]');
+      if (!budgetPurchase.value) {
+        budgetPurchase.classList.add('error');
+        budgetPurchase.parentElement.querySelector('.field-error').classList.add('visible');
+        valid = false;
+      } else {
+        budgetPurchase.classList.remove('error');
+        budgetPurchase.parentElement.querySelector('.field-error').classList.remove('visible');
+      }
+
+      const timeline = document.querySelector('[name="timeline"]:checked');
+      if (!timeline) {
+        document.getElementById('timelineError').classList.add('visible');
+        valid = false;
+      } else {
+        document.getElementById('timelineError').classList.remove('visible');
+      }
+    }
+
+    if (step === 4) {
+      const energy = document.querySelector('[name="energy_preference"]:checked');
+      if (!energy) {
+        document.getElementById('energyError').classList.add('visible');
+        valid = false;
+      } else {
+        document.getElementById('energyError').classList.remove('visible');
+      }
+    }
+
+    return valid;
+  }
+
+  // ─── FORM SUBMISSION ───
+  document.getElementById('riderForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    // Check consent
+    const consent = document.getElementById('consent');
+    if (!consent.checked) {
+      document.getElementById('consentError').classList.add('visible');
+      return;
+    } else {
+      document.getElementById('consentError').classList.remove('visible');
+    }
+
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    submitBtn.classList.add('loading');
+
+    // Collect all form data
+    const form = document.getElementById('riderForm');
+    const data = {};
+
+    // Text/select inputs
+    ['first_name','last_name','email','phone','state','age_range','has_trainer','trainer_name',
+     'years_riding','discipline','jump_height','dressage_level','timeline','budget_purchase',
+     'budget_monthly','open_to_lease','energy_preference','spook_tolerance','green_horse',
+     'horse_height','horse_gender','best_horse','difficult_experience','dealbreakers',
+     'riding_notes','additional_notes'].forEach(name => {
+      const el = form.querySelector(`[name="${name}"]`);
+      if (el) data[name] = el.value || null;
+    });
+
+    // Radio inputs
+    ['ride_frequency','energy_preference','spook_tolerance','green_horse',
+     'open_to_lease','timeline'].forEach(name => {
+      const el = form.querySelector(`[name="${name}"]:checked`);
+      if (el) data[name] = el.value;
+    });
+
+    // Confidence range
+    data.confidence_level = parseInt(document.getElementById('confidenceRange').value);
+
+    // Checkbox arrays
+    const goals = Array.from(form.querySelectorAll('[name="goals"]:checked')).map(el => el.value);
+    data.goals = goals.length ? goals : null;
+
+    const breeds = Array.from(form.querySelectorAll('[name="breeds"]:checked')).map(el => el.value);
+    data.breeds = breeds.length ? breeds : null;
+
+    data.status = 'new';
+
+    try {
+      if (supabase) {
+        const { error } = await supabase.from('rider_profiles').insert([data]);
+        if (error) throw error;
+      } else {
+        // Dev mode — log to console if Supabase not configured
+        console.log('Form data (Supabase not configured):', data);
+        await new Promise(r => setTimeout(r, 800)); // Simulate delay
+      }
+
+      // Show success
+      document.getElementById('riderForm').style.display = 'none';
+      document.querySelector('.progress-bar').style.display = 'none';
+      document.getElementById('successScreen').classList.add('visible');
+      window.scrollTo({ top: document.getElementById('find-your-match').offsetTop - 80, behavior: 'smooth' });
+
+    } catch (err) {
+      console.error('Submission error:', err);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Find My Matches →';
+      submitBtn.classList.remove('loading');
+      alert('Something went wrong — please try again or email us directly.');
+    }
+  });
+</script>
+
+</body>
+</html>
