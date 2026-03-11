@@ -1397,117 +1397,109 @@
 <script>
   // ─────────────────────────────────────────────
   // SUPABASE CONFIGURATION
-  // Replace these with your actual Supabase credentials
-  // Found at: https://supabase.com/dashboard → your project → Settings → API
+  // Replace the two values below with your actual credentials
+  // Found at: supabase.com/dashboard → your project → Settings → API
   // ─────────────────────────────────────────────
-  const SUPABASE_URL = 'https://juoxafcylvynbodadavj.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1b3hhZmN5bHZ5bmJvZGFkYXZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMTI0MDUsImV4cCI6MjA4ODc4ODQwNX0.1BsvDRlrNf5GUyCdgZ2qvW52VMxqe8injySFwhS0zPM';
 
   /*
   ─────────────────────────────────────────────
-  SUPABASE TABLE SCHEMA
-  Run this SQL in your Supabase SQL editor:
+  SUPABASE TABLE SCHEMA — run once in your SQL editor:
 
   create table rider_profiles (
     id uuid default gen_random_uuid() primary key,
     created_at timestamp with time zone default now(),
-    first_name text,
-    last_name text,
-    email text,
-    phone text,
-    state text,
-    age_range text,
-    has_trainer text,
-    trainer_name text,
-    years_riding text,
-    ride_frequency text,
-    discipline text,
-    jump_height text,
-    dressage_level text,
-    confidence_level integer,
-    goals text[],
-    timeline text,
-    budget_purchase text,
-    budget_monthly text,
-    open_to_lease text,
-    energy_preference text,
-    spook_tolerance text,
-    green_horse text,
-    horse_height text,
-    horse_gender text,
-    breeds text[],
-    best_horse text,
-    difficult_experience text,
-    dealbreakers text,
-    riding_notes text,
-    additional_notes text,
-    status text default 'new'
+    first_name text, last_name text, email text, phone text,
+    state text, age_range text, has_trainer text, trainer_name text,
+    years_riding text, ride_frequency text, discipline text,
+    jump_height text, dressage_level text, confidence_level integer,
+    goals text[], timeline text, budget_purchase text, budget_monthly text,
+    open_to_lease text, energy_preference text, spook_tolerance text,
+    green_horse text, horse_height text, horse_gender text, breeds text[],
+    best_horse text, difficult_experience text, dealbreakers text,
+    riding_notes text, additional_notes text, status text default 'new'
   );
-
-  -- Enable Row Level Security
   alter table rider_profiles enable row level security;
-
-  -- Allow inserts from anonymous users (for form submissions)
-  create policy "Allow public inserts" on rider_profiles
-    for insert with check (true);
+  create policy "Allow public inserts" on rider_profiles for insert with check (true);
   ─────────────────────────────────────────────
   */
 
-  // Hide setup banner if credentials are configured
-  if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-    document.getElementById('setupBanner').style.display = 'none';
-  }
+  var SUPABASE_URL = 'YOUR_SUPABASE_URL';
+  var SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
-  // Initialize Supabase
-  let supabase = null;
-  try {
-    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
-      supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  var supabaseClient = null;
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Hide setup banner if credentials look real ──
+    if (SUPABASE_URL.startsWith('https://')) {
+      var banner = document.getElementById('setupBanner');
+      if (banner) banner.style.display = 'none';
     }
-  } catch(e) {
-    console.warn('Supabase not configured yet');
-  }
 
-  // ─── MULTI-STEP NAVIGATION ───
-  let currentStep = 1;
-  const totalSteps = 5;
+    // ── Init Supabase if configured ──
+    try {
+      if (SUPABASE_URL.startsWith('https://')) {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+    } catch (e) {
+      console.warn('Supabase init failed:', e);
+    }
+
+    // ── Form submit handler ──
+    var form = document.getElementById('riderForm');
+    if (form) {
+      form.addEventListener('submit', handleSubmit);
+    }
+
+  });
+
+  // ─────────────────────────────────────────────
+  // STEP NAVIGATION — on window so onclick= works
+  // ─────────────────────────────────────────────
+  window.nextStep = function (from) {
+    if (!validateStep(from)) return;
+    showStep(from + 1);
+  };
+
+  window.prevStep = function (from) {
+    showStep(from - 1);
+  };
+
+  function showStep(step) {
+    document.querySelectorAll('.form-step').forEach(function (el) {
+      el.classList.remove('active');
+    });
+    var target = document.getElementById('step-' + step);
+    if (target) target.classList.add('active');
+    updateProgress(step);
+    var section = document.getElementById('find-your-match');
+    if (section) window.scrollTo({ top: section.offsetTop - 80, behavior: 'smooth' });
+  }
 
   function updateProgress(step) {
-    document.querySelectorAll('.progress-step').forEach((el, i) => {
+    document.querySelectorAll('.progress-step').forEach(function (el, i) {
       el.classList.remove('active', 'done');
       if (i + 1 === step) el.classList.add('active');
       if (i + 1 < step) el.classList.add('done');
     });
   }
 
-  function showStep(step) {
-    document.querySelectorAll('.form-step').forEach(el => el.classList.remove('active'));
-    document.getElementById(`step-${step}`).classList.add('active');
-    updateProgress(step);
-    currentStep = step;
-    window.scrollTo({ top: document.getElementById('find-your-match').offsetTop - 80, behavior: 'smooth' });
-  }
-
-  function nextStep(from) {
-    if (!validateStep(from)) return;
-    showStep(from + 1);
-  }
-
-  function prevStep(from) {
-    showStep(from - 1);
-  }
-
-  // ─── VALIDATION ───
+  // ─────────────────────────────────────────────
+  // VALIDATION
+  // ─────────────────────────────────────────────
   function validateStep(step) {
-    let valid = true;
+    var valid = true;
 
     if (step === 1) {
-      ['first_name', 'last_name', 'email', 'state', 'age_range', 'has_trainer'].forEach(name => {
-        const input = document.querySelector(`[name="${name}"]`);
-        const error = input.closest('.field-group').querySelector('.field-error');
-        const isEmpty = !input.value.trim();
-        const isInvalidEmail = name === 'email' && input.value && !input.value.includes('@');
-        if (isEmpty || isInvalidEmail) {
+      var requiredFields = ['first_name', 'last_name', 'email', 'state', 'age_range', 'has_trainer'];
+      requiredFields.forEach(function (name) {
+        var input = document.querySelector('[name="' + name + '"]');
+        if (!input) return;
+        var group = input.closest('.field-group');
+        var error = group ? group.querySelector('.field-error') : null;
+        var isEmpty = !input.value.trim();
+        var badEmail = (name === 'email') && input.value && !input.value.includes('@');
+        if (isEmpty || badEmail) {
           input.classList.add('error');
           if (error) error.classList.add('visible');
           valid = false;
@@ -1519,142 +1511,149 @@
     }
 
     if (step === 2) {
-      // Check years riding
-      const yearsRiding = document.querySelector('[name="years_riding"]');
-      if (!yearsRiding.value) {
+      var yearsRiding = document.querySelector('[name="years_riding"]');
+      if (yearsRiding && !yearsRiding.value) {
         yearsRiding.classList.add('error');
         valid = false;
-      } else {
+      } else if (yearsRiding) {
         yearsRiding.classList.remove('error');
       }
 
-      // Check ride frequency
-      const freq = document.querySelector('[name="ride_frequency"]:checked');
+      var freq = document.querySelector('[name="ride_frequency"]:checked');
+      var freqErr = document.getElementById('freqError');
       if (!freq) {
-        document.getElementById('freqError').classList.add('visible');
+        if (freqErr) freqErr.classList.add('visible');
         valid = false;
       } else {
-        document.getElementById('freqError').classList.remove('visible');
+        if (freqErr) freqErr.classList.remove('visible');
       }
 
-      // Check discipline
-      const disc = document.querySelector('[name="discipline"]:checked');
+      var disc = document.querySelector('[name="discipline"]:checked');
+      var discErr = document.getElementById('discError');
       if (!disc) {
-        document.getElementById('discError').classList.add('visible');
+        if (discErr) discErr.classList.add('visible');
         valid = false;
       } else {
-        document.getElementById('discError').classList.remove('visible');
+        if (discErr) discErr.classList.remove('visible');
       }
     }
 
     if (step === 3) {
-      const budgetPurchase = document.querySelector('[name="budget_purchase"]');
-      if (!budgetPurchase.value) {
-        budgetPurchase.classList.add('error');
-        budgetPurchase.parentElement.querySelector('.field-error').classList.add('visible');
-        valid = false;
-      } else {
-        budgetPurchase.classList.remove('error');
-        budgetPurchase.parentElement.querySelector('.field-error').classList.remove('visible');
+      var budgetPurchase = document.querySelector('[name="budget_purchase"]');
+      if (budgetPurchase) {
+        var bpGroup = budgetPurchase.closest('.field-group');
+        var bpErr = bpGroup ? bpGroup.querySelector('.field-error') : null;
+        if (!budgetPurchase.value) {
+          budgetPurchase.classList.add('error');
+          if (bpErr) bpErr.classList.add('visible');
+          valid = false;
+        } else {
+          budgetPurchase.classList.remove('error');
+          if (bpErr) bpErr.classList.remove('visible');
+        }
       }
 
-      const timeline = document.querySelector('[name="timeline"]:checked');
+      var timeline = document.querySelector('[name="timeline"]:checked');
+      var timeErr = document.getElementById('timelineError');
       if (!timeline) {
-        document.getElementById('timelineError').classList.add('visible');
+        if (timeErr) timeErr.classList.add('visible');
         valid = false;
       } else {
-        document.getElementById('timelineError').classList.remove('visible');
+        if (timeErr) timeErr.classList.remove('visible');
       }
     }
 
     if (step === 4) {
-      const energy = document.querySelector('[name="energy_preference"]:checked');
+      var energy = document.querySelector('[name="energy_preference"]:checked');
+      var energyErr = document.getElementById('energyError');
       if (!energy) {
-        document.getElementById('energyError').classList.add('visible');
+        if (energyErr) energyErr.classList.add('visible');
         valid = false;
       } else {
-        document.getElementById('energyError').classList.remove('visible');
+        if (energyErr) energyErr.classList.remove('visible');
       }
     }
 
     return valid;
   }
 
-  // ─── FORM SUBMISSION ───
-  document.getElementById('riderForm').addEventListener('submit', async function(e) {
+  // ─────────────────────────────────────────────
+  // FORM SUBMISSION
+  // ─────────────────────────────────────────────
+  async function handleSubmit(e) {
     e.preventDefault();
 
-    // Check consent
-    const consent = document.getElementById('consent');
-    if (!consent.checked) {
-      document.getElementById('consentError').classList.add('visible');
+    var consent = document.getElementById('consent');
+    var consentErr = document.getElementById('consentError');
+    if (!consent || !consent.checked) {
+      if (consentErr) consentErr.classList.add('visible');
       return;
     } else {
-      document.getElementById('consentError').classList.remove('visible');
+      if (consentErr) consentErr.classList.remove('visible');
     }
 
-    const submitBtn = document.getElementById('submitBtn');
+    var submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
-    submitBtn.classList.add('loading');
 
-    // Collect all form data
-    const form = document.getElementById('riderForm');
-    const data = {};
+    var form = document.getElementById('riderForm');
 
-    // Text/select inputs
+    var data = {};
+
+    // Plain text/select fields
     ['first_name','last_name','email','phone','state','age_range','has_trainer','trainer_name',
      'years_riding','discipline','jump_height','dressage_level','timeline','budget_purchase',
      'budget_monthly','open_to_lease','energy_preference','spook_tolerance','green_horse',
      'horse_height','horse_gender','best_horse','difficult_experience','dealbreakers',
-     'riding_notes','additional_notes'].forEach(name => {
-      const el = form.querySelector(`[name="${name}"]`);
+     'riding_notes','additional_notes'].forEach(function (name) {
+      var el = form.querySelector('[name="' + name + '"]');
       if (el) data[name] = el.value || null;
     });
 
-    // Radio inputs
-    ['ride_frequency','energy_preference','spook_tolerance','green_horse',
-     'open_to_lease','timeline'].forEach(name => {
-      const el = form.querySelector(`[name="${name}"]:checked`);
+    // Radio fields (override any select above with checked radio value)
+    ['ride_frequency','energy_preference','spook_tolerance','green_horse','open_to_lease','timeline'].forEach(function (name) {
+      var el = form.querySelector('[name="' + name + '"]:checked');
       if (el) data[name] = el.value;
     });
 
-    // Confidence range
-    data.confidence_level = parseInt(document.getElementById('confidenceRange').value);
+    // Range
+    var confRange = document.getElementById('confidenceRange');
+    data.confidence_level = confRange ? parseInt(confRange.value) : null;
 
     // Checkbox arrays
-    const goals = Array.from(form.querySelectorAll('[name="goals"]:checked')).map(el => el.value);
+    var goals = Array.from(form.querySelectorAll('[name="goals"]:checked')).map(function (el) { return el.value; });
     data.goals = goals.length ? goals : null;
 
-    const breeds = Array.from(form.querySelectorAll('[name="breeds"]:checked')).map(el => el.value);
+    var breeds = Array.from(form.querySelectorAll('[name="breeds"]:checked')).map(function (el) { return el.value; });
     data.breeds = breeds.length ? breeds : null;
 
     data.status = 'new';
 
     try {
-      if (supabase) {
-        const { error } = await supabase.from('rider_profiles').insert([data]);
-        if (error) throw error;
+      if (supabaseClient) {
+        var result = await supabaseClient.from('rider_profiles').insert([data]);
+        if (result.error) throw result.error;
       } else {
-        // Dev mode — log to console if Supabase not configured
-        console.log('Form data (Supabase not configured):', data);
-        await new Promise(r => setTimeout(r, 800)); // Simulate delay
+        console.log('Dev mode — Supabase not configured. Form data:', data);
+        await new Promise(function (r) { setTimeout(r, 800); });
       }
 
       // Show success
-      document.getElementById('riderForm').style.display = 'none';
-      document.querySelector('.progress-bar').style.display = 'none';
-      document.getElementById('successScreen').classList.add('visible');
-      window.scrollTo({ top: document.getElementById('find-your-match').offsetTop - 80, behavior: 'smooth' });
+      form.style.display = 'none';
+      var progressBar = document.querySelector('.progress-bar');
+      if (progressBar) progressBar.style.display = 'none';
+      var successScreen = document.getElementById('successScreen');
+      if (successScreen) successScreen.classList.add('visible');
+      var section = document.getElementById('find-your-match');
+      if (section) window.scrollTo({ top: section.offsetTop - 80, behavior: 'smooth' });
 
     } catch (err) {
       console.error('Submission error:', err);
       submitBtn.disabled = false;
       submitBtn.textContent = 'Find My Matches →';
-      submitBtn.classList.remove('loading');
-      alert('Something went wrong — please try again or email us directly.');
+      alert('Something went wrong — please try again.');
     }
-  });
+  }
 </script>
 
 </body>
